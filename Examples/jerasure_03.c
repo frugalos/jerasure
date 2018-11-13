@@ -85,10 +85,12 @@ int main(int argc, char **argv)
   matrix_copy = talloc(int, k*k);
   inverse = talloc(int, k*k);
 
+  static gf2_t g;
+  
   for (i = 0; i < k; i++) {
     for (j = 0; j < k; j++) {
       n = i ^ ((1 << w)-1-j);
-      matrix[i*k+j] = (n == 0) ? 0 : galois_single_divide(1, n, w);
+      matrix[i*k+j] = (n == 0) ? 0 : galois_single_divide(&g, 1, n, w);
     }
   }
 
@@ -103,14 +105,14 @@ int main(int argc, char **argv)
   printf("The Cauchy Matrix:\n");
   jerasure_print_matrix(matrix, k, k, w);
   memcpy(matrix_copy, matrix, sizeof(int)*k*k);
-  i = jerasure_invertible_matrix(matrix_copy, k, w);
+  i = jerasure_invertible_matrix(&g, matrix_copy, k, w);
   printf("\nInvertible: %s\n", (i == 1) ? "Yes" : "No");
   if (i == 1) {
     printf("\nInverse:\n");
     memcpy(matrix_copy, matrix, sizeof(int)*k*k);
-    i = jerasure_invert_matrix(matrix_copy, inverse, k, w);
+    i = jerasure_invert_matrix(&g, matrix_copy, inverse, k, w);
     jerasure_print_matrix(inverse, k, k, w);
-    identity = jerasure_matrix_multiply(inverse, matrix, k, k, k, k, w);
+    identity = jerasure_matrix_multiply(&g, inverse, matrix, k, k, k, k, w);
     printf("\nInverse times matrix (should be identity):\n");
     jerasure_print_matrix(identity, k, k, w);
   }

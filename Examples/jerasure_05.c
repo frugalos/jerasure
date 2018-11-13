@@ -77,7 +77,7 @@ static void print_data_and_coding(int k, int m, int w, int size,
 {
   int i, j, x;
   int n, sp;
-
+  
   if(k > m) n = k;
   else n = m;
   sp = size * 2 + size/(w/8) + 8;
@@ -118,6 +118,7 @@ int main(int argc, char **argv)
   int *erasures, *erased;
   int *decoding_matrix, *dm_ids;
   uint32_t seed;
+  static gf2_t g;
   
   if (argc != 6) usage(NULL);
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -131,7 +132,7 @@ int main(int argc, char **argv)
   matrix = talloc(int, m*k);
   for (i = 0; i < m; i++) {
     for (j = 0; j < k; j++) {
-      matrix[i*k+j] = galois_single_divide(1, i ^ (m + j), w);
+      matrix[i*k+j] = galois_single_divide(&g, 1, i ^ (m + j), w);
     }
   }
 
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
     coding[i] = talloc(char, size);
   }
 
-  jerasure_matrix_encode(k, m, w, matrix, data, coding, size);
+  jerasure_matrix_encode(&g, k, m, w, matrix, data, coding, size);
   
   printf("Encoding Complete:\n\n");
   print_data_and_coding(k, m, w, size, data, coding);
@@ -181,7 +182,7 @@ int main(int argc, char **argv)
   printf("Erased %d random devices:\n\n", m);
   print_data_and_coding(k, m, w, size, data, coding);
   
-  i = jerasure_matrix_decode(k, m, w, matrix, 0, erasures, data, coding, size);
+  i = jerasure_matrix_decode(&g, k, m, w, matrix, 0, erasures, data, coding, size);
 
   printf("State of the system after decoding:\n\n");
   print_data_and_coding(k, m, w, size, data, coding);
@@ -192,7 +193,7 @@ int main(int argc, char **argv)
   for (i = 0; i < m; i++) erased[i] = 1;
   for (; i < k+m; i++) erased[i] = 0;
 
-  jerasure_make_decoding_matrix(k, m, w, matrix, erased, decoding_matrix, dm_ids);
+  jerasure_make_decoding_matrix(&g, k, m, w, matrix, erased, decoding_matrix, dm_ids);
 
   printf("Suppose we erase the first %d devices.  Here is the decoding matrix:\n\n", m);
   jerasure_print_matrix(decoding_matrix, k, k, w);
@@ -201,7 +202,7 @@ int main(int argc, char **argv)
   jerasure_print_matrix(dm_ids, 1, k, w);
 
   bzero(data[0], size);
-  jerasure_matrix_dotprod(k, w, decoding_matrix, dm_ids, 0, data, coding, size);
+  jerasure_matrix_dotprod(&g, k, w, decoding_matrix, dm_ids, 0, data, coding, size);
 
   printf("\nAfter calling jerasure_matrix_dotprod, we calculate the value of device #0 to be:\n\n");
   printf("D0 :");

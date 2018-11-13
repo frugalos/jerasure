@@ -77,6 +77,7 @@ int main(int argc, char **argv)
   int *a32, *copy;
   int i;
   int w;
+  static gf2_t g;
   
   if (argc != 3) usage(NULL);
   if (sscanf(argv[1], "%d", &w) == 0 || (w != 8 && w != 16 && w != 32)) usage("Bad w");
@@ -96,21 +97,21 @@ int main(int argc, char **argv)
   if (w == 8) {
     x = (unsigned char *) copy;
     y = (unsigned char *) a32;
-    reed_sol_galois_w08_region_multby_2((char *) a32, sizeof(int)*4);
+    reed_sol_galois_w08_region_multby_2(&g, (char *) a32, sizeof(int)*4);
     for (i = 0; i < 4*sizeof(int)/sizeof(char); i++) {
        printf("Char %2d: %3u *2 = %3u\n", i, x[i], y[i]);
     }
   } else if (w == 16) {
     xs = (unsigned short *) copy;
     ys = (unsigned short *) a32;
-    reed_sol_galois_w16_region_multby_2((char *) a32, sizeof(int)*4);
+    reed_sol_galois_w16_region_multby_2(&g, (char *) a32, sizeof(int)*4);
     for (i = 0; i < 4*sizeof(int)/sizeof(short); i++) {
        printf("Short %2d: %5u *2 = %5u\n", i, xs[i], ys[i]);
     }
   } else if (w == 32) {
     xi = (unsigned int *) copy;
     yi = (unsigned int *) a32;
-    reed_sol_galois_w16_region_multby_2((char *) a32, sizeof(int)*4);
+    reed_sol_galois_w16_region_multby_2(&g, (char *) a32, sizeof(int)*4);
     for (i = 0; i < 4*sizeof(int)/sizeof(int); i++) {
        printf("Int %2d: %10u *2 = %10u\n", i, xi[i], yi[i]);
     }

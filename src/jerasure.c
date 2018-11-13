@@ -96,7 +96,7 @@ void jerasure_print_bitmatrix(int *m, int rows, int cols, int w)
   }
 }
 
-int jerasure_make_decoding_matrix(int k, int m, int w, int *matrix, int *erased, int *decoding_matrix, int *dm_ids)
+int jerasure_make_decoding_matrix(gf2_t* g, int k, int m, int w, int *matrix, int *erased, int *decoding_matrix, int *dm_ids)
 {
   int i, j, *tmpmat;
 
@@ -121,7 +121,7 @@ int jerasure_make_decoding_matrix(int k, int m, int w, int *matrix, int *erased,
     }
   }
 
-  i = jerasure_invert_matrix(tmpmat, decoding_matrix, k, w);
+  i = jerasure_invert_matrix(g, tmpmat, decoding_matrix, k, w);
   free(tmpmat);
   return i;
 }
@@ -165,7 +165,7 @@ int jerasure_make_decoding_bitmatrix(int k, int m, int w, int *matrix, int *eras
   return i;
 }
 
-int jerasure_matrix_decode(int k, int m, int w, int *matrix, int row_k_ones, int *erasures,
+int jerasure_matrix_decode(gf2_t* g, int k, int m, int w, int *matrix, int row_k_ones, int *erasures,
                           char **data_ptrs, char **coding_ptrs, int size)
 {
   int i, edd, lastdrive;
@@ -221,7 +221,7 @@ int jerasure_matrix_decode(int k, int m, int w, int *matrix, int row_k_ones, int
       return -1;
     }
 
-    if (jerasure_make_decoding_matrix(k, m, w, matrix, erased, decoding_matrix, dm_ids) < 0) {
+    if (jerasure_make_decoding_matrix(g, k, m, w, matrix, erased, decoding_matrix, dm_ids) < 0) {
       free(erased);
       free(dm_ids);
       free(decoding_matrix);
@@ -237,7 +237,7 @@ int jerasure_matrix_decode(int k, int m, int w, int *matrix, int row_k_ones, int
 
   for (i = 0; edd > 0 && i < lastdrive; i++) {
     if (erased[i]) {
-      jerasure_matrix_dotprod(k, w, decoding_matrix+(i*k), dm_ids, i, data_ptrs, coding_ptrs, size);
+      jerasure_matrix_dotprod(g, k, w, decoding_matrix+(i*k), dm_ids, i, data_ptrs, coding_ptrs, size);
       edd--;
     }
   }
@@ -255,7 +255,7 @@ int jerasure_matrix_decode(int k, int m, int w, int *matrix, int row_k_ones, int
     for (i = 0; i < k; i++) {
       tmpids[i] = (i < lastdrive) ? i : i+1;
     }
-    jerasure_matrix_dotprod(k, w, matrix, tmpids, lastdrive, data_ptrs, coding_ptrs, size);
+    jerasure_matrix_dotprod(g, k, w, matrix, tmpids, lastdrive, data_ptrs, coding_ptrs, size);
     free(tmpids);
   }
   
@@ -263,7 +263,7 @@ int jerasure_matrix_decode(int k, int m, int w, int *matrix, int row_k_ones, int
 
   for (i = 0; i < m; i++) {
     if (erased[k+i]) {
-      jerasure_matrix_dotprod(k, w, matrix+(i*k), NULL, i+k, data_ptrs, coding_ptrs, size);
+      jerasure_matrix_dotprod(g, k, w, matrix+(i*k), NULL, i+k, data_ptrs, coding_ptrs, size);
     }
   }
 
@@ -275,7 +275,7 @@ int jerasure_matrix_decode(int k, int m, int w, int *matrix, int row_k_ones, int
 }
 
 
-int *jerasure_matrix_to_bitmatrix(int k, int m, int w, int *matrix) 
+int *jerasure_matrix_to_bitmatrix(gf2_t* g, int k, int m, int w, int *matrix) 
 {
   int *bitmatrix;
   int rowelts, rowindex, colindex, elt, i, j, l, x;
@@ -296,7 +296,7 @@ int *jerasure_matrix_to_bitmatrix(int k, int m, int w, int *matrix)
         for (l = 0; l < w; l++) {
           bitmatrix[colindex+x+l*rowelts] = ((elt & (1 << l)) ? 1 : 0);
         }
-        elt = galois_single_multiply(elt, 2, w);
+        elt = galois_single_multiply(g, elt, 2, w);
       }
       colindex += w;
     }
@@ -305,7 +305,7 @@ int *jerasure_matrix_to_bitmatrix(int k, int m, int w, int *matrix)
   return bitmatrix;
 }
 
-void jerasure_matrix_encode(int k, int m, int w, int *matrix,
+void jerasure_matrix_encode(gf2_t* g, int k, int m, int w, int *matrix,
                           char **data_ptrs, char **coding_ptrs, int size)
 {
   int i;
@@ -316,11 +316,11 @@ void jerasure_matrix_encode(int k, int m, int w, int *matrix,
   }
 
   for (i = 0; i < m; i++) {
-    jerasure_matrix_dotprod(k, w, matrix+(i*k), NULL, k+i, data_ptrs, coding_ptrs, size);
+    jerasure_matrix_dotprod(g, k, w, matrix+(i*k), NULL, k+i, data_ptrs, coding_ptrs, size);
   }
 }
 
-void jerasure_bitmatrix_dotprod(int k, int w, int *bitmatrix_row,
+void jerasure_bitmatrix_dotprod(gf2_t* g, int k, int w, int *bitmatrix_row,
                              int *src_ids, int dest_id,
                              char **data_ptrs, char **coding_ptrs, int size, int packetsize)
 {
@@ -355,7 +355,7 @@ void jerasure_bitmatrix_dotprod(int k, int w, int *bitmatrix_row,
               jerasure_total_memcpy_bytes += packetsize;
               pstarted = 1;
             } else {
-              galois_region_xor(dptr, pptr, packetsize);
+              galois_region_xor(g, dptr, pptr, packetsize);
               jerasure_total_xor_bytes += packetsize;
             }
           }
@@ -366,7 +366,7 @@ void jerasure_bitmatrix_dotprod(int k, int w, int *bitmatrix_row,
   }
 }
 
-void jerasure_do_parity(int k, char **data_ptrs, char *parity_ptr, int size) 
+void jerasure_do_parity(gf2_t* g, int k, char **data_ptrs, char *parity_ptr, int size) 
 {
   int i;
 
@@ -374,12 +374,12 @@ void jerasure_do_parity(int k, char **data_ptrs, char *parity_ptr, int size)
   jerasure_total_memcpy_bytes += size;
   
   for (i = 1; i < k; i++) {
-    galois_region_xor(data_ptrs[i], parity_ptr, size);
+    galois_region_xor(g, data_ptrs[i], parity_ptr, size);
     jerasure_total_xor_bytes += size;
   }
 }
 
-int jerasure_invert_matrix(int *mat, int *inv, int rows, int w)
+int jerasure_invert_matrix(gf2_t* g, int *mat, int *inv, int rows, int w)
 {
   int cols, i, j, k, x, rs2;
   int row_start, tmp, inverse;
@@ -418,10 +418,10 @@ int jerasure_invert_matrix(int *mat, int *inv, int rows, int w)
     /* Multiply the row by 1/element i,i  */
     tmp = mat[row_start+i];
     if (tmp != 1) {
-      inverse = galois_single_divide(1, tmp, w);
+      inverse = galois_single_divide(g, 1, tmp, w);
       for (j = 0; j < cols; j++) { 
-        mat[row_start+j] = galois_single_multiply(mat[row_start+j], inverse, w);
-        inv[row_start+j] = galois_single_multiply(inv[row_start+j], inverse, w);
+        mat[row_start+j] = galois_single_multiply(g, mat[row_start+j], inverse, w);
+        inv[row_start+j] = galois_single_multiply(g, inv[row_start+j], inverse, w);
       }
     }
 
@@ -440,8 +440,8 @@ int jerasure_invert_matrix(int *mat, int *inv, int rows, int w)
           tmp = mat[k];
           rs2 = cols*j;
           for (x = 0; x < cols; x++) {
-            mat[rs2+x] ^= galois_single_multiply(tmp, mat[row_start+x], w);
-            inv[rs2+x] ^= galois_single_multiply(tmp, inv[row_start+x], w);
+            mat[rs2+x] ^= galois_single_multiply(g, tmp, mat[row_start+x], w);
+            inv[rs2+x] ^= galois_single_multiply(g, tmp, inv[row_start+x], w);
           }
         }
       }
@@ -458,7 +458,7 @@ int jerasure_invert_matrix(int *mat, int *inv, int rows, int w)
         tmp = mat[rs2+i];
         mat[rs2+i] = 0; 
         for (k = 0; k < cols; k++) {
-          inv[rs2+k] ^= galois_single_multiply(tmp, inv[row_start+k], w);
+          inv[rs2+k] ^= galois_single_multiply(g, tmp, inv[row_start+k], w);
         }
       }
     }
@@ -466,7 +466,7 @@ int jerasure_invert_matrix(int *mat, int *inv, int rows, int w)
   return 0;
 }
 
-int jerasure_invertible_matrix(int *mat, int rows, int w)
+int jerasure_invertible_matrix(gf2_t* g, int *mat, int rows, int w)
 {
   int cols, i, j, k, x, rs2;
   int row_start, tmp, inverse;
@@ -494,9 +494,9 @@ int jerasure_invertible_matrix(int *mat, int rows, int w)
     /* Multiply the row by 1/element i,i  */
     tmp = mat[row_start+i];
     if (tmp != 1) {
-      inverse = galois_single_divide(1, tmp, w);
+      inverse = galois_single_divide(g, 1, tmp, w);
       for (j = 0; j < cols; j++) { 
-        mat[row_start+j] = galois_single_multiply(mat[row_start+j], inverse, w);
+        mat[row_start+j] = galois_single_multiply(g, mat[row_start+j], inverse, w);
       }
     }
 
@@ -514,7 +514,7 @@ int jerasure_invertible_matrix(int *mat, int rows, int w)
           tmp = mat[k];
           rs2 = cols*j;
           for (x = 0; x < cols; x++) {
-            mat[rs2+x] ^= galois_single_multiply(tmp, mat[row_start+x], w);
+            mat[rs2+x] ^= galois_single_multiply(g, tmp, mat[row_start+x], w);
           }
         }
       }
@@ -580,7 +580,7 @@ void jerasure_free_schedule_cache(int k, int m, int ***cache)
   free(cache);
 }
 
-void jerasure_matrix_dotprod(int k, int w, int *matrix_row,
+void jerasure_matrix_dotprod(gf2_t* g, int k, int w, int *matrix_row,
                           int *src_ids, int dest_id,
                           char **data_ptrs, char **coding_ptrs, int size)
 {
@@ -613,7 +613,7 @@ void jerasure_matrix_dotprod(int k, int w, int *matrix_row,
         jerasure_total_memcpy_bytes += size;
         init = 1;
       } else {
-        galois_region_xor(sptr, dptr, size);
+        galois_region_xor(g, sptr, dptr, size);
         jerasure_total_xor_bytes += size;
       }
     }
@@ -631,9 +631,9 @@ void jerasure_matrix_dotprod(int k, int w, int *matrix_row,
         sptr = coding_ptrs[src_ids[i]-k];
       }
       switch (w) {
-        case 8:  galois_w08_region_multiply(sptr, matrix_row[i], size, dptr, init); break;
-        case 16: galois_w16_region_multiply(sptr, matrix_row[i], size, dptr, init); break;
-        case 32: galois_w32_region_multiply(sptr, matrix_row[i], size, dptr, init); break;
+	  case 8:  galois_w08_region_multiply(g, sptr, matrix_row[i], size, dptr, init); break;
+	  case 16: galois_w16_region_multiply(g, sptr, matrix_row[i], size, dptr, init); break;
+	  case 32: galois_w32_region_multiply(g, sptr, matrix_row[i], size, dptr, init); break;
       }
       jerasure_total_gf_bytes += size;
       init = 1;
@@ -642,7 +642,7 @@ void jerasure_matrix_dotprod(int k, int w, int *matrix_row,
 }
 
 
-int jerasure_bitmatrix_decode(int k, int m, int w, int *bitmatrix, int row_k_ones, int *erasures,
+int jerasure_bitmatrix_decode(gf2_t* g, int k, int m, int w, int *bitmatrix, int row_k_ones, int *erasures,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize)
 {
   int i;
@@ -697,7 +697,7 @@ int jerasure_bitmatrix_decode(int k, int m, int w, int *bitmatrix, int row_k_one
 
   for (i = 0; edd > 0 && i < lastdrive; i++) {
     if (erased[i]) {
-      jerasure_bitmatrix_dotprod(k, w, decoding_matrix+i*k*w*w, dm_ids, i, data_ptrs, coding_ptrs, size, packetsize);
+      jerasure_bitmatrix_dotprod(g, k, w, decoding_matrix+i*k*w*w, dm_ids, i, data_ptrs, coding_ptrs, size, packetsize);
       edd--;
     }
   }
@@ -713,13 +713,13 @@ int jerasure_bitmatrix_decode(int k, int m, int w, int *bitmatrix, int row_k_one
     for (i = 0; i < k; i++) {
       tmpids[i] = (i < lastdrive) ? i : i+1;
     }
-    jerasure_bitmatrix_dotprod(k, w, bitmatrix, tmpids, lastdrive, data_ptrs, coding_ptrs, size, packetsize);
+    jerasure_bitmatrix_dotprod(g, k, w, bitmatrix, tmpids, lastdrive, data_ptrs, coding_ptrs, size, packetsize);
     free(tmpids);
   }
 
   for (i = 0; i < m; i++) {
     if (erased[k+i]) {
-      jerasure_bitmatrix_dotprod(k, w, bitmatrix+i*k*w*w, NULL, k+i, data_ptrs, coding_ptrs, size, packetsize);
+      jerasure_bitmatrix_dotprod(g, k, w, bitmatrix+i*k*w*w, NULL, k+i, data_ptrs, coding_ptrs, size, packetsize);
     }
   }
 
@@ -988,7 +988,7 @@ static int **jerasure_generate_decoding_schedule(int k, int m, int w, int *bitma
   return schedule;
 }
 
-int jerasure_schedule_decode_lazy(int k, int m, int w, int *bitmatrix, int *erasures,
+int jerasure_schedule_decode_lazy(gf2_t* g, int k, int m, int w, int *bitmatrix, int *erasures,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize, 
                             int smart)
 {
@@ -1006,7 +1006,7 @@ int jerasure_schedule_decode_lazy(int k, int m, int w, int *bitmatrix, int *eras
   }
 
   for (tdone = 0; tdone < size; tdone += packetsize*w) {
-  jerasure_do_scheduled_operations(ptrs, schedule, packetsize);
+    jerasure_do_scheduled_operations(g, ptrs, schedule, packetsize);
     for (i = 0; i < k+m; i++) ptrs[i] += (packetsize*w);
   }
 
@@ -1016,7 +1016,7 @@ int jerasure_schedule_decode_lazy(int k, int m, int w, int *bitmatrix, int *eras
   return 0;
 }
 
-int jerasure_schedule_decode_cache(int k, int m, int w, int ***scache, int *erasures,
+int jerasure_schedule_decode_cache(gf2_t* g, int k, int m, int w, int ***scache, int *erasures,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize)
 {
   int i, tdone;
@@ -1039,7 +1039,7 @@ int jerasure_schedule_decode_cache(int k, int m, int w, int ***scache, int *eras
 
 
   for (tdone = 0; tdone < size; tdone += packetsize*w) {
-  jerasure_do_scheduled_operations(ptrs, schedule, packetsize);
+    jerasure_do_scheduled_operations(g, ptrs, schedule, packetsize);
     for (i = 0; i < k+m; i++) ptrs[i] += (packetsize*w);
   }
 
@@ -1176,7 +1176,7 @@ int jerasure_invertible_bitmatrix(int *mat, int rows)
 }
 
   
-int *jerasure_matrix_multiply(int *m1, int *m2, int r1, int c1, int r2, int c2, int w)
+int *jerasure_matrix_multiply(gf2_t* g, int *m1, int *m2, int r1, int c1, int r2, int c2, int w)
 {
   int *product, i, j, k;
 
@@ -1186,7 +1186,7 @@ int *jerasure_matrix_multiply(int *m1, int *m2, int r1, int c1, int r2, int c2, 
   for (i = 0; i < r1; i++) {
     for (j = 0; j < c2; j++) {
       for (k = 0; k < r2; k++) {
-        product[i*c2+j] ^= galois_single_multiply(m1[i*c1+k], m2[k*c2+j], w);
+        product[i*c2+j] ^= galois_single_multiply(g, m1[i*c1+k], m2[k*c2+j], w);
       }
     }
   }
@@ -1203,7 +1203,7 @@ void jerasure_get_stats(double *fill_in)
   jerasure_total_memcpy_bytes = 0;
 }
 
-void jerasure_do_scheduled_operations(char **ptrs, int **operations, int packetsize)
+void jerasure_do_scheduled_operations(gf2_t* g, char **ptrs, int **operations, int packetsize)
 {
   char *sptr;
   char *dptr;
@@ -1218,7 +1218,7 @@ void jerasure_do_scheduled_operations(char **ptrs, int **operations, int packets
       operations[op][2], 
       operations[op][3]); 
       printf("xor(0x%x, 0x%x -> 0x%x, %d)\n", sptr, dptr, dptr, packetsize); */
-      galois_region_xor(sptr, dptr, packetsize);
+      galois_region_xor(g, sptr, dptr, packetsize);
       jerasure_total_xor_bytes += packetsize;
     } else {
 /*      printf("memcpy(0x%x <- 0x%x)\n", dptr, sptr); */
@@ -1228,7 +1228,7 @@ void jerasure_do_scheduled_operations(char **ptrs, int **operations, int packets
   }  
 }
 
-void jerasure_schedule_encode(int k, int m, int w, int **schedule,
+void jerasure_schedule_encode(gf2_t* g, int k, int m, int w, int **schedule,
                                    char **data_ptrs, char **coding_ptrs, int size, int packetsize)
 {
   char **ptr_copy;
@@ -1238,7 +1238,7 @@ void jerasure_schedule_encode(int k, int m, int w, int **schedule,
   for (i = 0; i < k; i++) ptr_copy[i] = data_ptrs[i];
   for (i = 0; i < m; i++) ptr_copy[i+k] = coding_ptrs[i];
   for (tdone = 0; tdone < size; tdone += packetsize*w) {
-    jerasure_do_scheduled_operations(ptr_copy, schedule, packetsize);
+    jerasure_do_scheduled_operations(g, ptr_copy, schedule, packetsize);
     for (i = 0; i < k+m; i++) ptr_copy[i] += (packetsize*w);
   }
   free(ptr_copy);
@@ -1450,7 +1450,7 @@ error:
   return NULL;
 }
 
-void jerasure_bitmatrix_encode(int k, int m, int w, int *bitmatrix,
+void jerasure_bitmatrix_encode(gf2_t* g, int k, int m, int w, int *bitmatrix,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize)
 {
   int i;
@@ -1466,7 +1466,7 @@ void jerasure_bitmatrix_encode(int k, int m, int w, int *bitmatrix,
   }
 
   for (i = 0; i < m; i++) {
-    jerasure_bitmatrix_dotprod(k, w, bitmatrix+i*k*w*w, NULL, k+i, data_ptrs, coding_ptrs, size, packetsize);
+    jerasure_bitmatrix_dotprod(g, k, w, bitmatrix+i*k*w*w, NULL, k+i, data_ptrs, coding_ptrs, size, packetsize);
   }
 }
 
@@ -1476,7 +1476,9 @@ void jerasure_bitmatrix_encode(int k, int m, int w, int *bitmatrix,
  */
 int jerasure_autoconf_test()
 {
-  int x = galois_single_multiply(1, 2, 8);
+  gf2_t* g = galois_init_empty();
+  int x = galois_single_multiply(g, 1, 2, 8);
+  galois_destroy(g);
   if (x != 2) {
     return -1;
   }

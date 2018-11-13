@@ -107,6 +107,7 @@ int main(int argc, char **argv)
   int *erasures, *erased;
   int *decoding_matrix, *dm_ids;
   uint32_t seed;
+  static gf2_t g;
   
   if (argc != 6) usage(NULL);
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -121,10 +122,10 @@ int main(int argc, char **argv)
   matrix = talloc(int, m*k);
   for (i = 0; i < m; i++) {
     for (j = 0; j < k; j++) {
-      matrix[i*k+j] = galois_single_divide(1, i ^ (m + j), w);
+      matrix[i*k+j] = galois_single_divide(&g, 1, i ^ (m + j), w);
     }
   }
-  bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+  bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 
   printf("<HTML><TITLE>jerasure_06");
   for (i = 1; i < argc; i++) printf(" %s", argv[i]);
@@ -149,7 +150,7 @@ int main(int argc, char **argv)
     coding[i] = talloc(char, psize*w);
   }
 
-  jerasure_bitmatrix_encode(k, m, w, bitmatrix, data, coding, w*psize, psize);
+  jerasure_bitmatrix_encode(&g, k, m, w, bitmatrix, data, coding, w*psize, psize);
   
   printf("Encoding Complete - Here is the state of the system\n\n");
   printf("<p>\n");
@@ -183,7 +184,7 @@ int main(int argc, char **argv)
   print_array(coding, m, psize*w, psize, "C");
   printf("<hr>\n");
 
-  i = jerasure_bitmatrix_decode(k, m, w, bitmatrix, 0, erasures, data, coding, 
+  i = jerasure_bitmatrix_decode(&g, k, m, w, bitmatrix, 0, erasures, data, coding, 
 		  w*psize, psize);
 
   printf("Here is the state of the system after decoding:\n\n");
@@ -220,7 +221,7 @@ int main(int argc, char **argv)
   printf("<hr>\n");
 
   for (i = 0; i < x; i++) {
-    jerasure_bitmatrix_dotprod(k, w, decoding_matrix+i*(k*w*w), dm_ids, i, data, coding, w*psize, psize);
+    jerasure_bitmatrix_dotprod(&g, k, w, decoding_matrix+i*(k*w*w), dm_ids, i, data, coding, w*psize, psize);
   }
 
   printf("Here is the state of the system after calling <b>jerasure_bitmatrix_dotprod()</b> %d time%s with the decoding matrix:\n\n", x, (x == 1) ? "" : "s");

@@ -109,6 +109,7 @@ int main(int argc, char **argv)
   int *erasures, *erased;
   double stats[3];
   uint32_t seed;
+  static gf2_t g;
   
   if (argc != 4) usage("Wrong number of arguments");
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -149,7 +150,7 @@ int main(int argc, char **argv)
     coding[i] = talloc(char, sizeof(long)*w);
   }
 
-  jerasure_schedule_encode(k, m, w, dumb, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_schedule_encode(&g, k, m, w, dumb, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(stats);
   printf("Smart Encoding Complete: - %.0lf XOR'd bytes.  State of the system:\n\n", stats[0]);
   printf("<p>\n");
@@ -178,7 +179,7 @@ int main(int argc, char **argv)
   print_array(coding, m, sizeof(long)*w, sizeof(long), "C");
   printf("<hr>\n");
   
-  jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, data, coding, w*sizeof(long), sizeof(long), 1);
+  jerasure_schedule_decode_lazy(&g, k, m, w, bitmatrix, erasures, data, coding, w*sizeof(long), sizeof(long), 1);
   jerasure_get_stats(stats);
 
   printf("State of the system after decoding: %.0lf XOR'd bytes\n\n", stats[0]);

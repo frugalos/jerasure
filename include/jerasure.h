@@ -123,7 +123,7 @@ extern "C" {
                               jerasure_generate_schedule_cache.
  */
 
-int *jerasure_matrix_to_bitmatrix(int k, int m, int w, int *matrix);
+int *jerasure_matrix_to_bitmatrix(gf2_t* g, int k, int m, int w, int *matrix);
 int **jerasure_dumb_bitmatrix_to_schedule(int k, int m, int w, int *bitmatrix);
 int **jerasure_smart_bitmatrix_to_schedule(int k, int m, int w, int *bitmatrix);
 int ***jerasure_generate_schedule_cache(int k, int m, int w, int *bitmatrix, int smart);
@@ -136,15 +136,15 @@ void jerasure_free_schedule_cache(int k, int m, int ***cache);
 /* Encoding - these are all straightforward.  jerasure_matrix_encode only 
    works with w = 8|16|32.  */
 
-void jerasure_do_parity(int k, char **data_ptrs, char *parity_ptr, int size);
+void jerasure_do_parity(gf2_t* g, int k, char **data_ptrs, char *parity_ptr, int size);
 
-void jerasure_matrix_encode(int k, int m, int w, int *matrix,
+void jerasure_matrix_encode(gf2_t* g, int k, int m, int w, int *matrix,
                           char **data_ptrs, char **coding_ptrs, int size);
 
-void jerasure_bitmatrix_encode(int k, int m, int w, int *bitmatrix,
+void jerasure_bitmatrix_encode(gf2_t* g, int k, int m, int w, int *bitmatrix,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize);
 
-void jerasure_schedule_encode(int k, int m, int w, int **schedule,
+void jerasure_schedule_encode(gf2_t* g, int k, int m, int w, int **schedule,
                                   char **data_ptrs, char **coding_ptrs, int size, int packetsize);
 
 /* ------------------------------------------------------------ */
@@ -183,22 +183,22 @@ void jerasure_schedule_encode(int k, int m, int w, int **schedule,
     
  */
 
-int jerasure_matrix_decode(int k, int m, int w, 
+int jerasure_matrix_decode(gf2_t* g, int k, int m, int w, 
                           int *matrix, int row_k_ones, int *erasures,
                           char **data_ptrs, char **coding_ptrs, int size);
                           
-int jerasure_bitmatrix_decode(int k, int m, int w, 
+int jerasure_bitmatrix_decode(gf2_t* g, int k, int m, int w, 
                             int *bitmatrix, int row_k_ones, int *erasures,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize);
 
-int jerasure_schedule_decode_lazy(int k, int m, int w, int *bitmatrix, int *erasures,
+int jerasure_schedule_decode_lazy(gf2_t* g, int k, int m, int w, int *bitmatrix, int *erasures,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize,
                             int smart);
 
-int jerasure_schedule_decode_cache(int k, int m, int w, int ***scache, int *erasures,
+int jerasure_schedule_decode_cache(gf2_t* g, int k, int m, int w, int ***scache, int *erasures,
                             char **data_ptrs, char **coding_ptrs, int size, int packetsize);
 
-int jerasure_make_decoding_matrix(int k, int m, int w, int *matrix, int *erased, 
+int jerasure_make_decoding_matrix(gf2_t* g, int k, int m, int w, int *matrix, int *erased, 
                                   int *decoding_matrix, int *dm_ids);
 
 int jerasure_make_decoding_bitmatrix(int k, int m, int w, int *matrix, int *erased, 
@@ -221,15 +221,15 @@ int *jerasure_erasures_to_erased(int k, int m, int *erasures);
 
  */
  
-void jerasure_matrix_dotprod(int k, int w, int *matrix_row,
+void jerasure_matrix_dotprod(gf2_t* g, int k, int w, int *matrix_row,
                           int *src_ids, int dest_id,
                           char **data_ptrs, char **coding_ptrs, int size);
 
-void jerasure_bitmatrix_dotprod(int k, int w, int *bitmatrix_row,
+void jerasure_bitmatrix_dotprod(gf2_t* g, int k, int w, int *bitmatrix_row,
                              int *src_ids, int dest_id,
                              char **data_ptrs, char **coding_ptrs, int size, int packetsize);
 
-void jerasure_do_scheduled_operations(char **ptrs, int **schedule, int packetsize);
+void jerasure_do_scheduled_operations(gf2_t* g, char **ptrs, int **schedule, int packetsize);
 
 /* ------------------------------------------------------------ */
 /* Matrix Inversion ------------------------------------------- */
@@ -255,9 +255,9 @@ void jerasure_do_scheduled_operations(char **ptrs, int **schedule, int packetsiz
    invertible.  (0 or 1). Mat will be destroyed.
  */
 
-int jerasure_invert_matrix(int *mat, int *inv, int rows, int w);
+int jerasure_invert_matrix(gf2_t* g, int *mat, int *inv, int rows, int w);
 int jerasure_invert_bitmatrix(int *mat, int *inv, int rows);
-int jerasure_invertible_matrix(int *mat, int rows, int w);
+int jerasure_invertible_matrix(gf2_t* g, int *mat, int rows, int w);
 int jerasure_invertible_bitmatrix(int *mat, int rows);
 
 /* ------------------------------------------------------------ */
@@ -277,7 +277,7 @@ void jerasure_print_matrix(int *matrix, int rows, int cols, int w);
 void jerasure_print_bitmatrix(int *matrix, int rows, int cols, int w);
 
 
-int *jerasure_matrix_multiply(int *m1, int *m2, int r1, int c1, int r2, int c2, int w);
+int *jerasure_matrix_multiply(gf2_t* g, int *m1, int *m2, int r1, int c1, int r2, int c2, int w);
 
 /* ------------------------------------------------------------ */
 /* Stats ------------------------------------------------------ */

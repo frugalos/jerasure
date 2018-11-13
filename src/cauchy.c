@@ -86,7 +86,7 @@ static int *cbest_all[33];
 
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))
 
-int cauchy_n_ones(int n, int w)
+int cauchy_n_ones(gf2_t* g, int n, int w)
 {
   int no;
   int cno;
@@ -98,7 +98,7 @@ int cauchy_n_ones(int n, int w)
 
   if (PPs[w] == -1) {
     nones = 0;
-    PPs[w] = galois_single_multiply(highbit, 2, w);
+    PPs[w] = galois_single_multiply(g, highbit, 2, w);
     for (i = 0; i < w; i++) {
       if (PPs[w] & (1 << i)) {
         ONEs[w][nones] = (1 << i);
@@ -128,7 +128,7 @@ int cauchy_n_ones(int n, int w)
   return no;
 }
   
-int *cauchy_original_coding_matrix(int k, int m, int w)
+int *cauchy_original_coding_matrix(gf2_t* g, int k, int m, int w)
 {
   int *matrix;
   int i, j, index;
@@ -139,14 +139,14 @@ int *cauchy_original_coding_matrix(int k, int m, int w)
   index = 0;
   for (i = 0; i < m; i++) {
     for (j = 0; j < k; j++) {
-      matrix[index] = galois_single_divide(1, (i ^ (m+j)), w);
+      matrix[index] = galois_single_divide(g, 1, (i ^ (m+j)), w);
       index++;
     }
   }
   return matrix;
 }
 
-int *cauchy_xy_coding_matrix(int k, int m, int w, int *X, int *Y)
+int *cauchy_xy_coding_matrix(gf2_t* g, int k, int m, int w, int *X, int *Y)
 {
   int index, i, j;
   int *matrix;
@@ -156,14 +156,14 @@ int *cauchy_xy_coding_matrix(int k, int m, int w, int *X, int *Y)
   index = 0;
   for (i = 0; i < m; i++) {
     for (j = 0; j < k; j++) {
-      matrix[index] = galois_single_divide(1, (X[i] ^ Y[j]), w);
+      matrix[index] = galois_single_divide(g, 1, (X[i] ^ Y[j]), w);
       index++;
     }
   }
   return matrix;
 }
 
-void cauchy_improve_coding_matrix(int k, int m, int w, int *matrix)
+void cauchy_improve_coding_matrix(gf2_t* g, int k, int m, int w, int *matrix)
 {
   int index, i, j, x;
   int tmp;
@@ -171,10 +171,10 @@ void cauchy_improve_coding_matrix(int k, int m, int w, int *matrix)
 
   for (j = 0; j < k; j++) {
     if (matrix[j] != 1) {
-      tmp = galois_single_divide(1, matrix[j], w);
+      tmp = galois_single_divide(g, 1, matrix[j], w);
       index = j;
       for (i = 0; i < m; i++) {
-        matrix[index] = galois_single_multiply(matrix[index], tmp, w);
+        matrix[index] = galois_single_multiply(g, matrix[index], tmp, w);
         index += k;
       }
     }
@@ -182,14 +182,14 @@ void cauchy_improve_coding_matrix(int k, int m, int w, int *matrix)
   for (i = 1; i < m; i++) {
     bno = 0;
     index = i*k;
-    for (j = 0; j < k; j++) bno += cauchy_n_ones(matrix[index+j], w);
+    for (j = 0; j < k; j++) bno += cauchy_n_ones(g, matrix[index+j], w);
     bno_index = -1;
     for (j = 0; j < k; j++) {
       if (matrix[index+j] != 1) {
-        tmp = galois_single_divide(1, matrix[index+j], w);
+        tmp = galois_single_divide(g, 1, matrix[index+j], w);
         tno = 0;
         for (x = 0; x < k; x++) {
-          tno += cauchy_n_ones(galois_single_multiply(matrix[index+x], tmp, w), w);
+          tno += cauchy_n_ones(g, galois_single_multiply(g, matrix[index+x], tmp, w), w);
         }
         if (tno < bno) {
           bno = tno;
@@ -198,22 +198,22 @@ void cauchy_improve_coding_matrix(int k, int m, int w, int *matrix)
       }
     }
     if (bno_index != -1) {
-      tmp = galois_single_divide(1, matrix[index+bno_index], w);
+      tmp = galois_single_divide(g, 1, matrix[index+bno_index], w);
       for (j = 0; j < k; j++) {
-        matrix[index+j] = galois_single_multiply(matrix[index+j], tmp, w);
+        matrix[index+j] = galois_single_multiply(g, matrix[index+j], tmp, w);
       }
     }
   }
 }
 
-int *cauchy_good_general_coding_matrix(int k, int m, int w)
+int *cauchy_good_general_coding_matrix(gf2_t* g, int k, int m, int w)
 {
   int *matrix, i;
 
   if (m == 2 && k <= cbest_max_k[w]) {
     matrix = talloc(int, k*m);
     if (matrix == NULL) return NULL;
-    if (!cbest_init) {
+    if (!cbest_init) { /* not safe for multithreads. need CAS */
       cbest_init = 1;
       cbest_all[0] = cbest_0; cbest_all[1] = cbest_1; cbest_all[2] = cbest_2; cbest_all[3] = cbest_3; cbest_all[4] =
       cbest_4; cbest_all[5] = cbest_5; cbest_all[6] = cbest_6; cbest_all[7] = cbest_7; cbest_all[8] = cbest_8;
@@ -230,9 +230,9 @@ int *cauchy_good_general_coding_matrix(int k, int m, int w)
     }
     return matrix;
   } else {
-    matrix = cauchy_original_coding_matrix(k, m, w);
+    matrix = cauchy_original_coding_matrix(g, k, m, w);
     if (matrix == NULL) return NULL;
-    cauchy_improve_coding_matrix(k, m, w, matrix);
+    cauchy_improve_coding_matrix(g, k, m, w, matrix);
     return matrix;
   }
 }

@@ -50,6 +50,7 @@
 #include <string.h>
 #include <gf_rand.h>
 #include "jerasure.h"
+#include "galois.h"
 #include "cauchy.h"
 
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))
@@ -120,6 +121,7 @@ int main(int argc, char **argv)
   int *erasures, *erased;
   double mstats[3], sstats[3];
   uint32_t seed;
+  static gf2_t g;
   
   if (argc != 5) usage(NULL);
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -128,7 +130,7 @@ int main(int argc, char **argv)
   if (sscanf(argv[4], "%d", &seed) == 0) usage("Bad seed");
   if (w < 30 && (k+m) > (1 << w)) usage("k + m is too big");
 
-  matrix = cauchy_original_coding_matrix(k, m, w);
+  matrix = cauchy_original_coding_matrix(&g, k, m, w);
   if (matrix == NULL) {
     usage("couldn't make coding matrix");
   }
@@ -159,11 +161,11 @@ int main(int argc, char **argv)
   jerasure_print_matrix(matrix, m, k, w);
   printf("</pre>\n");
 
-  bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+  bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 
   no = 0;
   for (i = 0; i < k*m; i++) {
-    no += cauchy_n_ones(matrix[i], w);
+    no += cauchy_n_ones(&g, matrix[i], w);
   }
 
   printf("The bitmatrix, which has %d one%s:<p><pre>\n", no, (no == 1) ? "" : "s");
@@ -191,11 +193,11 @@ int main(int argc, char **argv)
     ccopy[i] = talloc(char, sizeof(long)*w);
   }
 
-  jerasure_bitmatrix_encode(k, m, w, bitmatrix, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_bitmatrix_encode(&g, k, m, w, bitmatrix, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(mstats);
 
   schedule = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
-  jerasure_schedule_encode(k, m, w, schedule, data, ccopy, w*sizeof(long), sizeof(long));
+  jerasure_schedule_encode(&g, k, m, w, schedule, data, ccopy, w*sizeof(long), sizeof(long));
   jerasure_get_stats(sstats);
 
   printf("<p>Encoding with jerasure_bitmatrix_encode() - Bytes XOR'd: %.0lf.<br>\n", mstats[0]);
@@ -234,7 +236,7 @@ int main(int argc, char **argv)
   print_array(coding, m, sizeof(long)*w, sizeof(long), "C");
   printf("<hr>\n");
 
-  jerasure_bitmatrix_decode(k, m, w, bitmatrix, 0, erasures, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_bitmatrix_decode(&g, k, m, w, bitmatrix, 0, erasures, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(mstats);
 
   printf("<p>Decoded with jerasure_bitmatrix_decode - Bytes XOR'd: %.0lf.<br>\n", mstats[0]);
@@ -250,7 +252,7 @@ int main(int argc, char **argv)
     bzero((erasures[i] < k) ? data[erasures[i]] : coding[erasures[i]-k], sizeof(long)*w);
   }
 
-  jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, data, coding, w*sizeof(long), sizeof(long), 1);
+  jerasure_schedule_decode_lazy(&g, k, m, w, bitmatrix, erasures, data, coding, w*sizeof(long), sizeof(long), 1);
   jerasure_get_stats(sstats);
 
   printf("jerasure_schedule_decode_lazy - Bytes XOR'd: %.0lf.<br>\n", sstats[0]);

@@ -73,6 +73,7 @@ int main(int argc, char **argv)
   int *bitmatrix_copy;
   int *inverse;
   int *identity;
+  static gf2_t g;
 
   if (argc != 3) usage(NULL);
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -86,10 +87,10 @@ int main(int argc, char **argv)
   for (i = 0; i < k; i++) {
     for (j = 0; j < k; j++) {
       n = i ^ ((1 << w)-1-j);
-      matrix[i*k+j] = (n == 0) ? 0 : galois_single_divide(1, n, w);
+      matrix[i*k+j] = (n == 0) ? 0 : galois_single_divide(&g, 1, n, w);
     }
   }
-  bitmatrix = jerasure_matrix_to_bitmatrix(k, k, w, matrix);
+  bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, k, w, matrix);
 
   printf("<HTML><TITLE>jerasure_04");
   for (i = 1; i < argc; i++) printf(" %s", argv[i]);
@@ -109,7 +110,7 @@ int main(int argc, char **argv)
     memcpy(bitmatrix_copy, bitmatrix, sizeof(int)*k*w*k*w);
     i = jerasure_invert_bitmatrix(bitmatrix_copy, inverse, k*w);
     jerasure_print_bitmatrix(inverse, k*w, k*w, w);
-    identity = jerasure_matrix_multiply(inverse, bitmatrix, k*w, k*w, k*w, k*w, 2);
+    identity = jerasure_matrix_multiply(&g, inverse, bitmatrix, k*w, k*w, k*w, k*w, 2);
     printf("\nInverse times matrix (should be identity):\n");
     jerasure_print_bitmatrix(identity, k*w, k*w, w);
   }

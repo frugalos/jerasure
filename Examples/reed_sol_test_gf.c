@@ -109,6 +109,7 @@ int main(int argc, char **argv)
   int *erasures, *erased;
   gf_t *gf = NULL;
   uint32_t seed;
+  static gf2_t g;
   
   if (argc < 6) usage("Not enough command line arguments");  
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -125,9 +126,9 @@ int main(int argc, char **argv)
     usage("Invalid arguments given for GF!\n");
   }
 
-  galois_change_technique(gf, w); 
+  galois_change_technique(&g, gf, w); 
 
-  matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+  matrix = reed_sol_vandermonde_coding_matrix(&g, k, m, w);
 
   printf("<HTML><TITLE>reed_sol_test_gf");
   for (i = 1; i < argc; i++) printf(" %s", argv[i]);
@@ -154,7 +155,7 @@ int main(int argc, char **argv)
     old_values[i] = talloc(char, BUFSIZE);
   }
 
-  jerasure_matrix_encode(k, m, w, matrix, data, coding, BUFSIZE);
+  jerasure_matrix_encode(&g, k, m, w, matrix, data, coding, BUFSIZE);
   
   erasures = talloc(int, (m+1));
   erased = talloc(int, (k+m));
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
   }
   erasures[i] = -1;
 
-  i = jerasure_matrix_decode(k, m, w, matrix, 1, erasures, data, coding, BUFSIZE);
+  i = jerasure_matrix_decode(&g, k, m, w, matrix, 1, erasures, data, coding, BUFSIZE);
 
   for (i = 0; i < m; i++) {
     if (erasures[i] < k) {

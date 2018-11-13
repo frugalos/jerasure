@@ -111,6 +111,7 @@ int main(int argc, char **argv)
   int *erasures, *erased;
   double stats[3];
   uint32_t seed;
+  static gf2_t g;
   
   if (argc != 4) usage("Wrong number of arguments");
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -126,9 +127,9 @@ int main(int argc, char **argv)
   i = 1;
   for (j = 0; j < k; j++) {
     matrix[k+j] = i;
-    i = galois_single_multiply(i, 2, w);
+    i = galois_single_multiply(&g, i, 2, w);
   }
-  bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+  bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 
   smart = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
   cache = jerasure_generate_schedule_cache(k, m, w, bitmatrix, 1);
@@ -144,7 +145,7 @@ int main(int argc, char **argv)
     coding[i] = talloc(char, sizeof(long)*w);
   }
 
-  jerasure_schedule_encode(k, m, w, smart, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_schedule_encode(&g, k, m, w, smart, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(stats);
 
   printf("<HTML><TITLE>jerasure_08");
@@ -168,7 +169,7 @@ int main(int argc, char **argv)
   erasures[2] = -1;
   for (j = 0; j < m; j++) bzero(coding[j], sizeof(long)*w);
 
-  jerasure_schedule_decode_cache(k, m, w, cache, erasures, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_schedule_decode_cache(&g, k, m, w, cache, erasures, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(stats);
   printf("Encoding Using the Schedule Cache: - %.0lf XOR'd bytes\n\n", stats[0]);
   printf("<p>\n");
@@ -196,7 +197,7 @@ int main(int argc, char **argv)
   print_array(coding, m, sizeof(long)*w, sizeof(long), "C");
   printf("<hr>\n");
   
-  jerasure_schedule_decode_cache(k, m, w, cache, erasures, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_schedule_decode_cache(&g, k, m, w, cache, erasures, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(stats);
 
   printf("State of the system after decoding: %.0lf XOR'd bytes\n\n", stats[0]);
@@ -214,7 +215,7 @@ int main(int argc, char **argv)
   print_array(coding, m, sizeof(long)*w, sizeof(long), "C");
   printf("<hr>\n");
   
-  jerasure_do_parity(k, data, coding[0], sizeof(long)*w);
+  jerasure_do_parity(&g, k, data, coding[0], sizeof(long)*w);
   printf("State of the system after using\n");
   printf("<b>jerasure_do_parity()</b> to re-encode it:\n\n");
   printf("<p>\n");

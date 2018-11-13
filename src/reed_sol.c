@@ -56,7 +56,7 @@
 
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))
 
-int *reed_sol_r6_coding_matrix(int k, int w)
+int *reed_sol_r6_coding_matrix(gf2_t* g, int k, int w)
 {
   int *matrix;
   int i, tmp;
@@ -70,18 +70,18 @@ int *reed_sol_r6_coding_matrix(int k, int w)
   matrix[k] = 1;
   tmp = 1;
   for (i = 1; i < k; i++) {
-    tmp = galois_single_multiply(tmp, 2, w);
+    tmp = galois_single_multiply(g, tmp, 2, w);
     matrix[k+i] = tmp;
   }
   return matrix;
 }
 
-int *reed_sol_vandermonde_coding_matrix(int k, int m, int w)
+int *reed_sol_vandermonde_coding_matrix(gf2_t* g, int k, int m, int w)
 {
   int i, j;
   int *vdm, *dist;
 
-  vdm = reed_sol_big_vandermonde_distribution_matrix(k+m, k, w);
+  vdm = reed_sol_big_vandermonde_distribution_matrix(g, k+m, k, w);
   if (vdm == NULL) return NULL;
   dist = talloc(int, m*k);
   if (dist == NULL) {
@@ -101,10 +101,10 @@ int *reed_sol_vandermonde_coding_matrix(int k, int m, int w)
 static int prim08 = -1;
 static gf_t GF08;
 
-void reed_sol_galois_w08_region_multby_2(char *region, int nbytes)
+void reed_sol_galois_w08_region_multby_2(gf2_t* g, char *region, int nbytes)
 {
   if (prim08 == -1) {
-    prim08 = galois_single_multiply((1 << 7), 2, 8);
+    prim08 = galois_single_multiply(g, (1 << 7), 2, 8);
     if (!gf_init_hard(&GF08, 8, GF_MULT_BYTWO_b, GF_REGION_DEFAULT, GF_DIVIDE_DEFAULT,
                       prim08, 0, 0, NULL, NULL)) {
       fprintf(stderr, "Error: Can't initialize the GF for reed_sol_galois_w08_region_multby_2\n");
@@ -117,10 +117,10 @@ void reed_sol_galois_w08_region_multby_2(char *region, int nbytes)
 static int prim16 = -1;
 static gf_t GF16;
 
-void reed_sol_galois_w16_region_multby_2(char *region, int nbytes)
+void reed_sol_galois_w16_region_multby_2(gf2_t* g, char *region, int nbytes)
 {
   if (prim16 == -1) {
-    prim16 = galois_single_multiply((1 << 15), 2, 16);
+    prim16 = galois_single_multiply(g, (1 << 15), 2, 16);
     if (!gf_init_hard(&GF16, 16, GF_MULT_BYTWO_b, GF_REGION_DEFAULT, GF_DIVIDE_DEFAULT,
                       prim16, 0, 0, NULL, NULL)) {
       fprintf(stderr, "Error: Can't initialize the GF for reed_sol_galois_w16_region_multby_2\n");
@@ -133,10 +133,10 @@ void reed_sol_galois_w16_region_multby_2(char *region, int nbytes)
 static int prim32 = -1;
 static gf_t GF32;
 
-void reed_sol_galois_w32_region_multby_2(char *region, int nbytes)
+void reed_sol_galois_w32_region_multby_2(gf2_t* g, char *region, int nbytes)
 {
   if (prim32 == -1) {
-    prim32 = galois_single_multiply(((gf_val_32_t)1 << 31), 2, 32);
+    prim32 = galois_single_multiply(g, ((gf_val_32_t)1 << 31), 2, 32);
     if (!gf_init_hard(&GF32, 32, GF_MULT_BYTWO_b, GF_REGION_DEFAULT, GF_DIVIDE_DEFAULT,
                       prim32, 0, 0, NULL, NULL)) {
       fprintf(stderr, "Error: Can't initialize the GF for reed_sol_galois_w32_region_multby_2\n");
@@ -146,7 +146,7 @@ void reed_sol_galois_w32_region_multby_2(char *region, int nbytes)
   GF32.multiply_region.w32(&GF32, region, region, 2, nbytes, 0);
 }
 
-int reed_sol_r6_encode(int k, int w, char **data_ptrs, char **coding_ptrs, int size)
+int reed_sol_r6_encode(gf2_t* g, int k, int w, char **data_ptrs, char **coding_ptrs, int size)
 {
   int i;
 
@@ -154,26 +154,27 @@ int reed_sol_r6_encode(int k, int w, char **data_ptrs, char **coding_ptrs, int s
 
   memcpy(coding_ptrs[0], data_ptrs[0], size);
 
-  for (i = 1; i < k; i++) galois_region_xor(data_ptrs[i], coding_ptrs[0], size);
+  for (i = 1; i < k; i++) galois_region_xor(g, data_ptrs[i], coding_ptrs[0], size);
 
   /* Next, put the sum of (2^j)*Dj into coding region 1 */
 
   memcpy(coding_ptrs[1], data_ptrs[k-1], size);
 
+  /* reed_sol_galois_w**_region_multby_2()s are not safe for multithread even if it has the context(gf2_t) */
   for (i = k-2; i >= 0; i--) {
     switch (w) {
-      case 8:  reed_sol_galois_w08_region_multby_2(coding_ptrs[1], size); break;
-      case 16: reed_sol_galois_w16_region_multby_2(coding_ptrs[1], size); break;
-      case 32: reed_sol_galois_w32_region_multby_2(coding_ptrs[1], size); break;
+      case 8:  reed_sol_galois_w08_region_multby_2(g, coding_ptrs[1], size); break;
+      case 16: reed_sol_galois_w16_region_multby_2(g, coding_ptrs[1], size); break;
+      case 32: reed_sol_galois_w32_region_multby_2(g, coding_ptrs[1], size); break;
       default: return 0;
     }
 
-    galois_region_xor(data_ptrs[i], coding_ptrs[1], size);
+    galois_region_xor(g, data_ptrs[i], coding_ptrs[1], size);
   }
   return 1;
 }
 
-int *reed_sol_extended_vandermonde_matrix(int rows, int cols, int w)
+int *reed_sol_extended_vandermonde_matrix(gf2_t* g, int rows, int cols, int w)
 {
   int *vdm;
   int i, j, k;
@@ -197,13 +198,13 @@ int *reed_sol_extended_vandermonde_matrix(int rows, int cols, int w)
     k = 1;
     for (j = 0; j < cols; j++) {
       vdm[i*cols+j] = k;
-      k = galois_single_multiply(k, i, w);
+      k = galois_single_multiply(g, k, i, w);
     }
   }
   return vdm;
 }
 
-int *reed_sol_big_vandermonde_distribution_matrix(int rows, int cols, int w)
+int *reed_sol_big_vandermonde_distribution_matrix(gf2_t* g, int rows, int cols, int w)
 {
   int *dist;
   int i, j, k;
@@ -211,7 +212,7 @@ int *reed_sol_big_vandermonde_distribution_matrix(int rows, int cols, int w)
 
   if (cols >= rows) return NULL;
   
-  dist = reed_sol_extended_vandermonde_matrix(rows, cols, w);
+  dist = reed_sol_extended_vandermonde_matrix(g, rows, cols, w);
   if (dist == NULL) return NULL;
 
   sindex = 0;
@@ -240,10 +241,10 @@ int *reed_sol_big_vandermonde_distribution_matrix(int rows, int cols, int w)
     /* If Element i,i is not equal to 1, multiply the column by 1/i */
 
     if (dist[sindex+i] != 1) {
-      tmp = galois_single_divide(1, dist[sindex+i], w);
+      tmp = galois_single_divide(g, 1, dist[sindex+i], w);
       srindex = i;
       for (j = 0; j < rows; j++) {
-        dist[srindex] = galois_single_multiply(tmp, dist[srindex], w);
+        dist[srindex] = galois_single_multiply(g, tmp, dist[srindex], w);
         srindex += cols;
       }
     }
@@ -260,7 +261,7 @@ int *reed_sol_big_vandermonde_distribution_matrix(int rows, int cols, int w)
         srindex = j;
         siindex = i;
         for (k = 0; k < rows; k++) {
-          dist[srindex] = dist[srindex] ^ galois_single_multiply(tmp, dist[siindex], w);
+          dist[srindex] = dist[srindex] ^ galois_single_multiply(g, tmp, dist[siindex], w);
           srindex += cols;
           siindex += cols;
         }
@@ -274,10 +275,10 @@ int *reed_sol_big_vandermonde_distribution_matrix(int rows, int cols, int w)
   for (j = 0; j < cols; j++) {
     tmp = dist[sindex];
     if (tmp != 1) { 
-      tmp = galois_single_divide(1, tmp, w);
+      tmp = galois_single_divide(g, 1, tmp, w);
       srindex = sindex;
       for (i = cols; i < rows; i++) {
-        dist[srindex] = galois_single_multiply(tmp, dist[srindex], w);
+        dist[srindex] = galois_single_multiply(g, tmp, dist[srindex], w);
         srindex += cols;
       }
     }
@@ -291,8 +292,8 @@ int *reed_sol_big_vandermonde_distribution_matrix(int rows, int cols, int w)
   for (i = cols+1; i < rows; i++) {
     tmp = dist[sindex];
     if (tmp != 1) { 
-      tmp = galois_single_divide(1, tmp, w);
-      for (j = 0; j < cols; j++) dist[sindex+j] = galois_single_multiply(dist[sindex+j], tmp, w);
+      tmp = galois_single_divide(g, 1, tmp, w);
+      for (j = 0; j < cols; j++) dist[sindex+j] = galois_single_multiply(g, dist[sindex+j], tmp, w);
     }
     sindex += cols;
   }

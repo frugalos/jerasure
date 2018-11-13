@@ -48,6 +48,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "galois.h" /* gf2_t */
 #include "cauchy.h"
 #include "jerasure.h"
 #include "reed_sol.h"
@@ -74,6 +75,7 @@ int main(int argc, char **argv)
   int n;
   int i, no, w;
   int *bitmatrix;
+  static gf2_t g;
   
   if (argc != 3) usage(NULL);
   if (sscanf(argv[1], "0x%x", &n) == 0) {
@@ -86,7 +88,7 @@ int main(int argc, char **argv)
     if (n >= (1 << w)) usage("Bad n/w combination (n not between 0 and 2^w-1)\n");
   }
 
-  bitmatrix = jerasure_matrix_to_bitmatrix(1, 1, w, &n);
+  bitmatrix = jerasure_matrix_to_bitmatrix(&g, 1, 1, w, &n);
   printf("<HTML><title>cauchy_01 %u %d</title>\n", w, n);
   printf("<HTML><h3>cauchy_01 %u %d</h3>\n", w, n);
   printf("<pre>\n");
@@ -100,13 +102,13 @@ int main(int argc, char **argv)
 
   no = 0;
   for (i = 0; i < w*w; i++) no += bitmatrix[i];
-  if (no != cauchy_n_ones(n, w)) { 
+  if (no != cauchy_n_ones(&g, n, w)) { 
     fprintf(stderr, "Jerasure error: # ones in the bitmatrix (%d) doesn't match cauchy_n_ones() (%d).\n",
-       no, cauchy_n_ones(n, w));
+            no, cauchy_n_ones(&g, n, w));
     exit(1);
   }
 
-  printf("# Ones: %d\n", cauchy_n_ones(n, w));
+  printf("# Ones: %d\n", cauchy_n_ones(&g, n, w));
 
   return 0;
 }

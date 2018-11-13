@@ -134,6 +134,7 @@ int main (int argc, char **argv) {
 	/* Find buffersize */
 	int up, down;
 
+	static gf2_t g;
 
 	signal(SIGQUIT, ctrl_bs_handler);
 
@@ -438,18 +439,18 @@ int main (int argc, char **argv) {
 		case No_Coding:
 			break;
 		case Reed_Sol_Van:
-			matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+			matrix = reed_sol_vandermonde_coding_matrix(&g, k, m, w);
 			break;
 		case Reed_Sol_R6_Op:
 			break;
 		case Cauchy_Orig:
-			matrix = cauchy_original_coding_matrix(k, m, w);
-			bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+			matrix = cauchy_original_coding_matrix(&g, k, m, w);
+			bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 			schedule = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 			break;
 		case Cauchy_Good:
-			matrix = cauchy_good_general_coding_matrix(k, m, w);
-			bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+			matrix = cauchy_good_general_coding_matrix(&g, k, m, w);
+			bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 			schedule = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 			break;	
 		case Liberation:
@@ -507,25 +508,25 @@ int main (int argc, char **argv) {
 			case No_Coding:
 				break;
 			case Reed_Sol_Van:
-				jerasure_matrix_encode(k, m, w, matrix, data, coding, blocksize);
+                jerasure_matrix_encode(&g, k, m, w, matrix, data, coding, blocksize);
 				break;
 			case Reed_Sol_R6_Op:
-				reed_sol_r6_encode(k, w, data, coding, blocksize);
+                reed_sol_r6_encode(&g, k, w, data, coding, blocksize);
 				break;
 			case Cauchy_Orig:
-				jerasure_schedule_encode(k, m, w, schedule, data, coding, blocksize, packetsize);
+				jerasure_schedule_encode(&g, k, m, w, schedule, data, coding, blocksize, packetsize);
 				break;
 			case Cauchy_Good:
-				jerasure_schedule_encode(k, m, w, schedule, data, coding, blocksize, packetsize);
+				jerasure_schedule_encode(&g, k, m, w, schedule, data, coding, blocksize, packetsize);
 				break;
 			case Liberation:
-				jerasure_schedule_encode(k, m, w, schedule, data, coding, blocksize, packetsize);
+				jerasure_schedule_encode(&g, k, m, w, schedule, data, coding, blocksize, packetsize);
 				break;
 			case Blaum_Roth:
-				jerasure_schedule_encode(k, m, w, schedule, data, coding, blocksize, packetsize);
+				jerasure_schedule_encode(&g, k, m, w, schedule, data, coding, blocksize, packetsize);
 				break;
 			case Liber8tion:
-				jerasure_schedule_encode(k, m, w, schedule, data, coding, blocksize, packetsize);
+				jerasure_schedule_encode(&g, k, m, w, schedule, data, coding, blocksize, packetsize);
 				break;
 			case RDP:
 			case EVENODD:

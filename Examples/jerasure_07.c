@@ -108,6 +108,7 @@ int main(int argc, char **argv)
   int *erasures, *erased;
   double stats[3];
   uint32_t seed;
+  static gf2_t g;
   
   if (argc != 5) usage("Wrong number of arguments");
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -119,10 +120,10 @@ int main(int argc, char **argv)
   matrix = talloc(int, m*k);
   for (i = 0; i < m; i++) {
     for (j = 0; j < k; j++) {
-      matrix[i*k+j] = galois_single_divide(1, i ^ (m + j), w);
+      matrix[i*k+j] = galois_single_divide(&g, 1, i ^ (m + j), w);
     }
   }
-  bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+  bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 
   printf("<HTML><TITLE>jerasure_07");
   for (i = 1; i < argc; i++) printf(" %s", argv[i]);
@@ -151,7 +152,7 @@ int main(int argc, char **argv)
     coding[i] = talloc(char, sizeof(long)*w);
   }
 
-  jerasure_schedule_encode(k, m, w, dumb, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_schedule_encode(&g, k, m, w, dumb, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(stats);
   printf("Dumb Encoding Complete: - %.0lf XOR'd bytes.  State of the system:\n\n", stats[0]);
   printf("<p>\n");
@@ -160,7 +161,7 @@ int main(int argc, char **argv)
   print_array(coding, m, sizeof(long)*w, sizeof(long), "C");
   printf("<hr>\n");
 
-  jerasure_schedule_encode(k, m, w, smart, data, coding, w*sizeof(long), sizeof(long));
+  jerasure_schedule_encode(&g, k, m, w, smart, data, coding, w*sizeof(long), sizeof(long));
   jerasure_get_stats(stats);
   printf("Smart Encoding Complete: - %.0lf XOR'd bytes\n\n", stats[0]);
   printf("<p>\n");
@@ -189,7 +190,7 @@ int main(int argc, char **argv)
   print_array(coding, m, sizeof(long)*w, sizeof(long), "C");
   printf("<hr>\n");
 
-  jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, data, coding, w*sizeof(long), sizeof(long), 1);
+  jerasure_schedule_decode_lazy(&g, k, m, w, bitmatrix, erasures, data, coding, w*sizeof(long), sizeof(long), 1);
   jerasure_get_stats(stats);
 
   printf("State of the system after decoding: %.0lf XOR'd bytes\n\n", stats[0]);
@@ -211,7 +212,7 @@ int main(int argc, char **argv)
   print_array(coding, m, sizeof(long)*w, sizeof(long), "C");
   printf("<hr>\n");
 
-  jerasure_do_scheduled_operations(ptrs, smart, sizeof(long));
+  jerasure_do_scheduled_operations(&g, ptrs, smart, sizeof(long));
   printf("And using <b>jerasure_do_scheduled_operations()</b>: %.0lf XOR'd bytes\n\n", stats[0]);
   printf("<p>\n");
   print_array(data, k, sizeof(long)*w, sizeof(long), "D");

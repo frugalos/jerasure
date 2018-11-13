@@ -109,6 +109,7 @@ int main(int argc, char **argv)
   uint32_t seed;
   double t = 0, total_time = 0;
   gf_t *gf = NULL;
+  static gf2_t g;
   
   if (argc < 8) usage(NULL);  
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -127,9 +128,9 @@ int main(int argc, char **argv)
     usage("Invalid arguments given for GF!\n");
   }
 
-  galois_change_technique(gf, w); 
+  galois_change_technique(&g, gf, w); 
 
-  matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+  matrix = reed_sol_vandermonde_coding_matrix(&g, k, m, w);
 
   printf("<HTML><TITLE>reed_sol_time_gf");
   for (i = 1; i < argc; i++) printf(" %s", argv[i]);
@@ -158,7 +159,7 @@ int main(int argc, char **argv)
 
   for (i = 0; i < iterations; i++) {
     t = timing_now();
-    jerasure_matrix_encode(k, m, w, matrix, data, coding, bufsize);
+    jerasure_matrix_encode(&g, k, m, w, matrix, data, coding, bufsize);
     total_time += timing_now() - t;
   }
 
@@ -180,7 +181,7 @@ int main(int argc, char **argv)
 
   for (i = 0; i < iterations; i++) {
     t = timing_now();
-    jerasure_matrix_decode(k, m, w, matrix, 1, erasures, data, coding, bufsize);
+    jerasure_matrix_decode(&g, k, m, w, matrix, 1, erasures, data, coding, bufsize);
     total_time += timing_now() - t;
   }
   

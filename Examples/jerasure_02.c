@@ -71,14 +71,17 @@ int main(int argc, char **argv)
   if (sscanf(argv[3], "%d", &w) == 0 || w <= 0) usage("Bad w");
 
   matrix = talloc(int, r*c);
+  gf2_t* g = galois_init_empty();
 
   n = 1;
   for (i = 0; i < r*c; i++) {
     matrix[i] = n;
-    n = galois_single_multiply(n, 2, w);
+    n = galois_single_multiply(g, n, 2, w);
   }
 
-  bitmatrix = jerasure_matrix_to_bitmatrix(c, r, w, matrix);
+  bitmatrix = jerasure_matrix_to_bitmatrix(g, c, r, w, matrix);
+
+  galois_destroy(g);
 
   printf("<HTML><TITLE>jerasure_02");
   for (i = 1; i < argc; i++) printf(" %s", argv[i]);

@@ -116,6 +116,7 @@ int main(int argc, char **argv)
   unsigned char uc;
   int *erasures, *erased;
   uint32_t seed;
+  static gf2_t g;
   
   if (argc != 5) usage(NULL);
   if (sscanf(argv[1], "%d", &k) == 0 || k <= 0) usage("Bad k");
@@ -124,7 +125,7 @@ int main(int argc, char **argv)
   if (sscanf(argv[4], "%u", &seed) == 0) usage("Bad seed");
   if (w <= 16 && k + m > (1 << w)) usage("k + m is too big");
 
-  matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+  matrix = reed_sol_vandermonde_coding_matrix(&g, k, m, w);
 
   printf("<HTML><TITLE>reed_sol_01 %d %d %d %d</title>\n", k, m, w, seed);
   printf("<h3>reed_sol_01 %d %d %d %d</h3>\n", k, m, w, seed);
@@ -153,7 +154,7 @@ int main(int argc, char **argv)
     ccopy[i] = talloc(char, sizeof(long));
   }
 
-  jerasure_matrix_encode(k, m, w, matrix, data, coding, sizeof(long));
+  jerasure_matrix_encode(&g, k, m, w, matrix, data, coding, sizeof(long));
 
   for (i = 0; i < m; i++) {
     memcpy(ccopy[i], coding[i], sizeof(long));
@@ -179,7 +180,7 @@ int main(int argc, char **argv)
   printf("Erased %d random devices:\n\n", m);
   print_data_and_coding(k, m, w, sizeof(long), data, coding);
   
-  i = jerasure_matrix_decode(k, m, w, matrix, 1, erasures, data, coding, sizeof(long));
+  i = jerasure_matrix_decode(&g, k, m, w, matrix, 1, erasures, data, coding, sizeof(long));
 
   printf("State of the system after decoding:\n\n");
   print_data_and_coding(k, m, w, sizeof(long), data, coding);

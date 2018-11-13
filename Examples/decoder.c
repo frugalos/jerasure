@@ -123,6 +123,7 @@ int main (int argc, char **argv) {
 	double tsec;
 	double totalsec;
 
+	static gf2_t g;
 	
 	signal(SIGQUIT, ctrl_bs_handler);
 
@@ -225,18 +226,18 @@ int main (int argc, char **argv) {
 		case No_Coding:
 			break;
 		case Reed_Sol_Van:
-			matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
+			matrix = reed_sol_vandermonde_coding_matrix(&g, k, m, w);
 			break;
 		case Reed_Sol_R6_Op:
-			matrix = reed_sol_r6_coding_matrix(k, w);
+			matrix = reed_sol_r6_coding_matrix(&g, k, w);
 			break;
 		case Cauchy_Orig:
-			matrix = cauchy_original_coding_matrix(k, m, w);
-			bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+			matrix = cauchy_original_coding_matrix(&g, k, m, w);
+			bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 			break;
 		case Cauchy_Good:
-			matrix = cauchy_good_general_coding_matrix(k, m, w);
-			bitmatrix = jerasure_matrix_to_bitmatrix(k, m, w, matrix);
+			matrix = cauchy_good_general_coding_matrix(&g, k, m, w);
+			bitmatrix = jerasure_matrix_to_bitmatrix(&g, k, m, w, matrix);
 			break;
 		case Liberation:
 			bitmatrix = liberation_coding_bitmatrix(k, w);
@@ -319,10 +320,10 @@ int main (int argc, char **argv) {
 	
 		/* Choose proper decoding method */
 		if (tech == Reed_Sol_Van || tech == Reed_Sol_R6_Op) {
-			i = jerasure_matrix_decode(k, m, w, matrix, 1, erasures, data, coding, blocksize);
+			i = jerasure_matrix_decode(&g, k, m, w, matrix, 1, erasures, data, coding, blocksize);
 		}
 		else if (tech == Cauchy_Orig || tech == Cauchy_Good || tech == Liberation || tech == Blaum_Roth || tech == Liber8tion) {
-			i = jerasure_schedule_decode_lazy(k, m, w, bitmatrix, erasures, data, coding, blocksize, packetsize, 1);
+			i = jerasure_schedule_decode_lazy(&g, k, m, w, bitmatrix, erasures, data, coding, blocksize, packetsize, 1);
 		}
 		else {
 			fprintf(stderr, "Not a valid coding technique.\n");

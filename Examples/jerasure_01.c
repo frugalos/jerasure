@@ -73,11 +73,13 @@ int main(int argc, char **argv)
   matrix = talloc(int, r*c);
 
   n = 1;
+  gf2_t* g = galois_init_empty();
   for (i = 0; i < r*c; i++) {
     matrix[i] = n;
-    n = galois_single_multiply(n, 2, w);
+    n = galois_single_multiply(g, n, 2, w);
   }
-
+  galois_destroy(g);
+  
   printf("<HTML><TITLE>jerasure_01");
   for (i = 1; i < argc; i++) printf(" %s", argv[i]);
   printf("</TITLE>\n");
