@@ -66,7 +66,7 @@ gf_t *galois_get_field_ptr(gf2_t* g, int w)
 gf2_t* galois_init_empty()
 {
   gf2_t* ptr =  (gf2_t *) malloc(sizeof(gf2_t));
-  memset(ptr, sizeof(gf2_t), 0);
+  memset(ptr, 0, sizeof(gf2_t));
   return ptr;
 }
 
