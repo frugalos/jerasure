@@ -72,12 +72,13 @@ gf2_t* galois_init_empty()
 
 void galois_destroy(gf2_t* g)
 {
-	if (g) {
-		free(g->gf);
-		for (int i = 0; i < MAX_GF_INSTANCES; i ++)
-			free(galois_get_field_ptr(g, i));
-		free(g);
-	}
+  if (g) {
+    free(g->gf);
+    int i;
+    for (i = 0; i < MAX_GF_INSTANCES; i++)
+      free(galois_get_field_ptr(g, i));
+    free(g);
+  }
 }
 
 gf2_t* galois_init_field(int w,
