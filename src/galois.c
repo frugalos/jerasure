@@ -276,7 +276,7 @@ void galois_change_technique(gf2_t *g, gf_t* gf, int w)
     gf_free(g->gfp_array[w], g->gfp_is_composite[w]);
   }
 
-  g->gfp_array[w] = g;
+  g->gfp_array[w] = gf;
 }
 
 int galois_single_multiply(gf2_t* g, int x, int y, int w)
