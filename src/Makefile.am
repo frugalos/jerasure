@@ -3,10 +3,10 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = $(SIMD_FLAGS)
 
-lib_LTLIBRARIES = libJerasure.la
-libJerasure_la_SOURCES = galois.c jerasure.c reed_sol.c cauchy.c liberation.c
-libJerasure_la_LDFLAGS = -version-info 2:0:0
-libJerasure_la_LIBADD = -lgf_complete
+lib_LTLIBRARIES = libFrugalosJerasure.la
+libFrugalosJerasure_la_SOURCES = galois.c jerasure.c reed_sol.c cauchy.c liberation.c
+libFrugalosJerasure_la_LDFLAGS = -version-info 2:0:0
+libFrugalosJerasure_la_LIBADD = -lgf_complete
 include_HEADERS = ../include/jerasure.h
 
 # Install additional Jerasure header files in their own directory.

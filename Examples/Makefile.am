@@ -61,7 +61,7 @@ liberation_01_SOURCES = liberation_01.c
 decoder_SOURCES = decoder.c
 encoder_SOURCES = encoder.c
 
-LDADD = ../src/libJerasure.la
+LDADD = ../src/libFrugalosJerasure.la
 decoder_LDADD = $(LDADD) ../src/libtiming.a
 encoder_LDADD = $(LDADD) ../src/libtiming.a
 reed_sol_time_gf_LDADD = $(LDADD) ../src/libtiming.a
