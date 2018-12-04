@@ -100,7 +100,7 @@ gf2_t* galois_init_field(int w,
 
   gf2p = (gf2_t *) malloc(sizeof(gf2_t));
   gf2p->gf = (gf_t *) malloc(sizeof(gf_t));
-  if (!gf2p || gf2p->gf) {
+  if (!gf2p || !gf2p->gf) {
     fprintf(stderr, "ERROR -- cannot allocate memory for Galois field w=%d\n", w);
     assert(0);
   }
@@ -153,7 +153,7 @@ gf2_t* galois_init_composite_field(int w,
   
   gf2p = (gf2_t *) malloc(sizeof(gf2_t));
   gf2p->gf = (gf_t *) malloc(sizeof(gf_t));
-  if (!gf2p || gf2p->gf) {
+  if (!gf2p || !gf2p->gf) {
     fprintf(stderr, "ERROR -- cannot allocate memory for Galois field w=%d\n", w);
     assert(0);
   }
